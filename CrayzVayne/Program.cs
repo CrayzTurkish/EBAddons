@@ -26,11 +26,34 @@ namespace CrayzVayne
             get { return ObjectManager.Player; }
         }
 
+        public static bool UltActive()
+        {
+            return Player.HasBuff("vaynetumblefade") && !UnderEnemyTower((Vector2)_Player.Position);
+        }
+
+        public static bool UnderEnemyTower(Vector2 pos)
+        {
+            return EntityManager.Turrets.Enemies.Where(a => a.Health > 0 && !a.IsDead).Any(a => a.Distance(pos) < 1100);
+        }
+
         public static Spell.Ranged Q;
         public static Spell.Targeted E;
         public static Spell.Active R;
+        public static Spell.Active Heal;
 
-        public static Menu Menu, ComboMenu, HarassMenu, FarmMenu, CondemnMenu, DrawMenu, InterruptorMenu, GapCloserMenu, CondemnPriorityMenu;
+        public static Item HealthPotion;
+        public static Item CorruptingPotion;
+        public static Item RefillablePotion;
+        public static Item TotalBiscuit;
+        public static Item HuntersPotion;
+        public static Item Youmuu = new Item(ItemId.Youmuus_Ghostblade);
+        public static Item Botrk = new Item(ItemId.Blade_of_the_Ruined_King);
+        public static Item Cutlass = new Item(ItemId.Bilgewater_Cutlass);
+        public static Item Tear = new Item(ItemId.Tear_of_the_Goddess);
+        public static Item Qss = new Item(ItemId.Quicksilver_Sash);
+        public static Item Simitar = new Item(ItemId.Mercurial_Scimitar);
+
+        public static Menu Menu, ComboMenu, HarassMenu, FarmMenu, CondemnMenu, AutoPotHealMenu, ItemMenu, DrawMenu, InterruptorMenu, GapCloserMenu, CondemnPriorityMenu;
 
         public static string[] DangerSliderValues = { "Low", "Medium", "High" };
         public static string[] PriorityValues = { "Very Low", "Low", "Medium", "High", "Very High" };
@@ -45,6 +68,20 @@ namespace CrayzVayne
             Condemn.ESpell = new Spell.Skillshot(SpellSlot.E, 550, SkillShotType.Linear, 250, 1200);
             R = new Spell.Active(SpellSlot.R);
 
+            var slot = _Player.GetSpellSlotFromName("summonerheal");
+            if (slot != SpellSlot.Unknown)
+            {
+                Heal = new Spell.Active(slot, 600);
+            }
+
+            HealthPotion = new Item(2003, 0);
+            TotalBiscuit = new Item(2010, 0);
+            CorruptingPotion = new Item(2033, 0);
+            RefillablePotion = new Item(2031, 0);
+            HuntersPotion = new Item(2032, 0);
+
+            Chat.Print("<font color=\"#ef0101\" >Crayz Turkish Presents </font><font color=\"#ffffff\" > Crayz Vayne </font>");
+            Chat.Print("Dont Feed!!", Color.GreenYellow);
 
             Menu = MainMenu.AddMenu("Crayz Vayne", "Crayz Turkish");
 
@@ -63,6 +100,8 @@ namespace CrayzVayne
             ComboMenu.AddLabel("R Settings");
             ComboMenu.Add("useRCombo", new CheckBox("Use [R]", false));
             ComboMenu.Add("noRUnderTurret", new CheckBox("Disable [R] if Target is under enemy turret"));
+            ComboMenu.Add("noaa", new CheckBox("No AA If active Ulty "));
+            ComboMenu.Add("Noaaslider", new Slider("No AA when enemy in range ", 2, 1, 5));
 
             CondemnPriorityMenu = Menu.AddSubMenu("Auto Condemn", "Condemn Priority");
             CondemnPriorityMenu.AddGroupLabel("Condemn Priority");
@@ -114,6 +153,33 @@ namespace CrayzVayne
             FarmMenu.AddLabel("WaveClear");
             FarmMenu.Add("useQWaveClear", new CheckBox("Use [Q] WaveClear", true));
 
+            AutoPotHealMenu = Menu.AddSubMenu("Potion & Heal", "Potion & Heal");
+            AutoPotHealMenu.AddGroupLabel("Auto pot usage");
+            AutoPotHealMenu.Add("potion", new CheckBox("Use potions"));
+            AutoPotHealMenu.Add("potionminHP", new Slider("Minimum Health % to use potion", 40));
+            AutoPotHealMenu.Add("potionMinMP", new Slider("Minimum Mana % to use potion", 20));
+            AutoPotHealMenu.AddGroupLabel("AUto Heal Usage");
+            AutoPotHealMenu.Add("UseHeal", new CheckBox("Use Heal"));
+            AutoPotHealMenu.Add("useHealHP", new Slider("Minimum Health % to use Heal", 20));
+
+            ItemMenu = Menu.AddSubMenu("Item Settings", "ItemMenuettings");
+            ItemMenu.Add("useBOTRK", new CheckBox("Use BOTRK"));
+            ItemMenu.Add("useBotrkMyHP", new Slider("My Health < ", 60));
+            ItemMenu.Add("useBotrkEnemyHP", new Slider("Enemy Health < ", 60));
+            ItemMenu.Add("useYoumu", new CheckBox("Use Youmu"));
+            ItemMenu.AddSeparator();
+            ItemMenu.Add("useQSS", new CheckBox("Use QSS"));
+            ItemMenu.Add("Qssmode", new ComboBox(" ", 0, "Auto", "Combo"));
+            ItemMenu.Add("Stun", new CheckBox("Stun"));
+            ItemMenu.Add("Blind", new CheckBox("Blind"));
+            ItemMenu.Add("Charm", new CheckBox("Charm"));
+            ItemMenu.Add("Suppression", new CheckBox("Suppression"));
+            ItemMenu.Add("Polymorph", new CheckBox("Polymorph"));
+            ItemMenu.Add("Fear", new CheckBox("Fear"));
+            ItemMenu.Add("Taunt", new CheckBox("Taunt"));
+            ItemMenu.Add("Silence", new CheckBox("Silence", false));
+            ItemMenu.Add("QssDelay", new Slider("Use QSS Delay(ms)", 250, 0, 1000));
+
             DrawMenu = Menu.AddSubMenu("Misc Menu", "Misc Menu");
             DrawMenu.AddGroupLabel("Draw Settings");
             DrawMenu.Add("drawERange", new CheckBox("Draw [E] Range", false));
@@ -152,6 +218,20 @@ namespace CrayzVayne
             Obj_AI_Base.OnSpellCast += Obj_AI_Base_OnSpellCast;
             Obj_AI_Base.OnBasicAttack += Events.ObjAiBaseOnOnBasicAttack;
             GameObject.OnCreate += Events.GameObject_OnCreate;
+        }
+
+        public static void Player_OnIssueOrder(Obj_AI_Base sender, PlayerIssueOrderEventArgs args)
+        {
+            if (sender.IsMe && ComboMenu["noaa"].Cast<CheckBox>().CurrentValue
+                && (args.Order == GameObjectOrder.AttackUnit || args.Order == GameObjectOrder.AttackTo)
+                &&
+                (_Player.CountEnemiesInRange(1000f) >=
+                 ComboMenu["Noaaslider"].Cast<Slider>().CurrentValue)
+                && UltActive() || Player.HasBuffOfType(BuffType.Invisibility)
+                && Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo))
+            {
+                args.Process = false;
+            }
         }
 
         private static void Obj_AI_Base_OnSpellCast(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
@@ -217,7 +297,7 @@ namespace CrayzVayne
             }
         }
 
-        private static void AIHeroClient_OnProcessSpellCast(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
+    private static void AIHeroClient_OnProcessSpellCast(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
         {
             if (!sender.IsMe) return;
             if (args.SData.Name == Player.GetSpell(SpellSlot.R).Name)
@@ -339,6 +419,99 @@ namespace CrayzVayne
             else if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Harass))
             {
                 States.Harass();
+            }
+        }
+        public static
+           void AutoPot()
+        {
+            if (AutoPotHealMenu["potion"].Cast<CheckBox>().CurrentValue && !EloBuddy.Player.Instance.IsInShopRange() &&
+                EloBuddy.Player.Instance.HealthPercent <= AutoPotHealMenu["potionminHP"].Cast<Slider>().CurrentValue &&
+                !(EloBuddy.Player.Instance.HasBuff("RegenerationPotion") ||
+                  EloBuddy.Player.Instance.HasBuff("ItemCrystalFlaskJungle") ||
+                  EloBuddy.Player.Instance.HasBuff("ItemMiniRegenPotion") ||
+                  EloBuddy.Player.Instance.HasBuff("ItemCrystalFlask") ||
+                  EloBuddy.Player.Instance.HasBuff("ItemDarkCrystalFlask")))
+            {
+                if (Item.HasItem(HealthPotion.Id) && Item.CanUseItem(HealthPotion.Id))
+                {
+                    HealthPotion.Cast();
+                    Chat.Print("<font color=\"#ffffff\" > USe Pot </font>");
+                    return;
+                }
+                if (Item.HasItem(TotalBiscuit.Id) && Item.CanUseItem(TotalBiscuit.Id))
+                {
+                    TotalBiscuit.Cast();
+                    Chat.Print("<font color=\"#ffffff\" > USe Pot </font>");
+                    return;
+                }
+                if (Item.HasItem(RefillablePotion.Id) && Item.CanUseItem(RefillablePotion.Id))
+                {
+                    RefillablePotion.Cast();
+                    Chat.Print("<font color=\"#ffffff\" > USe Pot </font>");
+                    return;
+                }
+                if (Item.HasItem(CorruptingPotion.Id) && Item.CanUseItem(CorruptingPotion.Id))
+                {
+                    CorruptingPotion.Cast();
+                    Chat.Print("<font color=\"#ffffff\" > USe Pot </font>");
+                    return;
+                }
+            }
+            if (EloBuddy.Player.Instance.ManaPercent <= AutoPotHealMenu["potionMinMP"].Cast<Slider>().CurrentValue &&
+                !(EloBuddy.Player.Instance.HasBuff("RegenerationPotion") ||
+                  EloBuddy.Player.Instance.HasBuff("ItemMiniRegenPotion") ||
+                  EloBuddy.Player.Instance.HasBuff("ItemCrystalFlask") ||
+                  EloBuddy.Player.Instance.HasBuff("ItemDarkCrystalFlask")))
+            {
+                if (Item.HasItem(CorruptingPotion.Id) && Item.CanUseItem(CorruptingPotion.Id))
+                {
+                    CorruptingPotion.Cast();
+                    Chat.Print("<font color=\"#ffffff\" > USe Pot </font>");
+                }
+            }
+        }
+
+        public static
+            void UseHeal()
+        {
+            if (Heal != null && AutoPotHealMenu["UseHeal"].Cast<CheckBox>().CurrentValue && Heal.IsReady() &&
+                _Player.HealthPercent <= AutoPotHealMenu["useHealHP"].Cast<Slider>().CurrentValue
+                && _Player.CountEnemiesInRange(600) > 0 && Heal.IsReady())
+            {
+                Heal.Cast();
+                Chat.Print("<font color=\"#ffffff\" > USe Heal Noob </font>");
+            }
+        }
+
+        public static
+            void ItemUsage()
+        {
+            var target = TargetSelector.GetTarget(550, DamageType.Physical);
+
+
+            if (ItemMenu["useYoumu"].Cast<CheckBox>().CurrentValue && Youmuu.IsOwned() && Youmuu.IsReady())
+            {
+                if (ObjectManager.Player.CountEnemiesInRange(1500) == 1)
+                {
+                    Youmuu.Cast();
+                }
+            }
+            if (target != null)
+            {
+                if (ItemMenu["useBOTRK"].Cast<CheckBox>().CurrentValue && Item.HasItem(Cutlass.Id) &&
+                    Item.CanUseItem(Cutlass.Id) &&
+                    EloBuddy.Player.Instance.HealthPercent < ItemMenu["useBotrkMyHP"].Cast<Slider>().CurrentValue &&
+                    target.HealthPercent < ItemMenu["useBotrkEnemyHP"].Cast<Slider>().CurrentValue)
+                {
+                    Item.UseItem(Cutlass.Id, target);
+                }
+                if (ItemMenu["useBOTRK"].Cast<CheckBox>().CurrentValue && Item.HasItem(Botrk.Id) &&
+                    Item.CanUseItem(Botrk.Id) &&
+                    EloBuddy.Player.Instance.HealthPercent < ItemMenu["useBotrkMyHP"].Cast<Slider>().CurrentValue &&
+                    target.HealthPercent < ItemMenu["useBotrkEnemyHP"].Cast<Slider>().CurrentValue)
+                {
+                    Botrk.Cast(target);
+                }
             }
         }
 
