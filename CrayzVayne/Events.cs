@@ -42,14 +42,14 @@ namespace CrayzVayne
                 ObjectManager.Player.Distance(Player.Instance.Position) <= Program.E.Range && rengar != null)
             {
                 Program.E.Cast(rengar);
-                Console.WriteLine("Fuck Rengar :)");
+                Console.WriteLine("fuck rengar");
             }
         }
 
         public static void ObjAiBaseOnOnBasicAttack(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
         {
             if (!(sender is AIHeroClient)) return;
-            var target = (AIHeroClient)sender;
+            var target = (AIHeroClient) sender;
             if (Program.DrawMenu["antiKalista"].Cast<CheckBox>().CurrentValue && target.IsEnemy && target.Hero == Champion.Kalista && Program.Q.IsReady())
             {
                 var pos = (_Player.Position.Extend(Game.CursorPos, 300).Distance(target) <=

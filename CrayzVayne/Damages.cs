@@ -14,8 +14,8 @@ namespace CrayzVayne
         {
             return Player.Instance.CalculateDamageOnUnit(target, DamageType.Physical,
                 (float)
-                    (new[] { 0.3, 0.35, 0.4, 0.45, 0.5 }[
-                        Player.Instance.Spellbook.GetSpell(SpellSlot.Q).Level - 1]) *
+                    (new[] {0.3, 0.35, 0.4, 0.45, 0.5}[
+                        Player.Instance.Spellbook.GetSpell(SpellSlot.Q).Level - 1])*
                 (Player.Instance.TotalAttackDamage));
         }
     }

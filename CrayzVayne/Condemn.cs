@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using EloBuddy;
@@ -24,7 +24,7 @@ namespace CrayzVayne
         {
             if (unit.HasBuffOfType(BuffType.SpellImmunity) || unit.HasBuffOfType(BuffType.SpellShield) || LastCheck + 50 > Environment.TickCount || _Player.IsDashing()) return false;
             var prediction = ESpell.GetPrediction(unit);
-            var predictionsList = pos.IsValid() ? new List<Vector3>() { pos.To3D() } : new List<Vector3>
+            var predictionsList = pos.IsValid() ? new List<Vector3>() {pos.To3D()} :  new List<Vector3>
                         {
                             unit.ServerPosition,
                             unit.Position,
@@ -36,7 +36,7 @@ namespace CrayzVayne
             Program.Points = new List<Vector2>();
             foreach (var position in predictionsList)
             {
-                for (var i = 0; i < Program.CondemnMenu["pushDistance"].Cast<Slider>().CurrentValue; i += (int)unit.BoundingRadius)
+                for (var i = 0; i < Program.CondemnMenu["pushDistance"].Cast<Slider>().CurrentValue; i += (int) unit.BoundingRadius)
                 {
                     var cPos = _Player.Position.Extend(position, _Player.Distance(position) + i).To3D();
                     Program.Points.Add(cPos.To2D());
@@ -48,11 +48,11 @@ namespace CrayzVayne
                     }
                 }
             }
-            if ((wallsFound / predictionsList.Count) >= Program.CondemnMenu["condemnPercent"].Cast<Slider>().CurrentValue / 100f)
+            if ((wallsFound/ predictionsList.Count) >= Program.CondemnMenu["condemnPercent"].Cast<Slider>().CurrentValue/100f)
             {
                 return true;
             }
-
+            
             return false;
         }
 
