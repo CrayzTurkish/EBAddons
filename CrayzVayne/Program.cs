@@ -19,8 +19,6 @@ namespace CrayzVayne
         private static void Main(string[] args)
         {
             Loading.OnLoadingComplete += Game_OnStart;
-            Chat.Print("<font color=\"#ef0101\" >Crayz Turkish Presents </font><font color=\"#ffffff\" > Crayz Vayne </font>");
-            Chat.Print("Dont Feed!!", Color.GreenYellow);
         }
 
         public static AIHeroClient _Player
@@ -31,61 +29,33 @@ namespace CrayzVayne
         public static Spell.Ranged Q;
         public static Spell.Targeted E;
         public static Spell.Active R;
-        public static Spell.Active Heal;
 
-        public static Item HealthPotion;
-        public static Item CorruptingPotion;
-        public static Item RefillablePotion;
-        public static Item TotalBiscuit;
-        public static Item HuntersPotion;
-
-        public static Menu Menu,
-            ComboMenu,
-            HarassMenu,
-            FarmMenu,
-            CondemnMenu,
-            DrawMenu,
-            InterruptorMenu,
-            GapCloserMenu,
-            CondemnPriorityMenu,
-            AutoPotHealMenu;
-
+        public static Menu Menu, ComboMenu, HarassMenu, FarmMenu, CondemnMenu, DrawMenu, InterruptorMenu, GapCloserMenu, CondemnPriorityMenu;
+        
         public static string[] DangerSliderValues = {"Low", "Medium", "High"};
         public static string[] PriorityValues = {"Very Low", "Low", "Medium", "High", "Very High"};
         public static List<Vector2> Points = new List<Vector2>();
 
         private static void Game_OnStart(EventArgs args)
         {
-            var slot = _Player.GetSpellSlotFromName("summonerheal");
-            if (slot != SpellSlot.Unknown)
-            {
-                Heal = new Spell.Active(slot, 600);
-            }
-
-            HealthPotion = new Item(2003, 0);
-            TotalBiscuit = new Item(2010, 0);
-            CorruptingPotion = new Item(2033, 0);
-            RefillablePotion = new Item(2031, 0);
-            HuntersPotion = new Item(2032, 0);
-
             if (!_Player.ChampionName.ToLower().Contains("vayne")) return;
 
             Q = new Spell.Skillshot(SpellSlot.Q, int.MaxValue, SkillShotType.Linear);
-            E = new Spell.Targeted(SpellSlot.E, 590);
-            Condemn.ESpell = new Spell.Skillshot(SpellSlot.E, 590, SkillShotType.Linear, 250, 1250);
+            E = new Spell.Targeted(SpellSlot.E, 550);
+            Condemn.ESpell = new Spell.Skillshot(SpellSlot.E, 550, SkillShotType.Linear, 250, 1200);
             R = new Spell.Active(SpellSlot.R);
 
 
-            Menu = MainMenu.AddMenu("Crayz Vayne", "Crayz Vayne");
+            Menu = MainMenu.AddMenu("Crayz Vayne", "CrayzVayne");
 
             Menu.AddGroupLabel("Crayz Vayne");
-            Menu.AddLabel("Version: " + "7.5.0.0");
+            Menu.AddLabel("Version: " + "7.5.179.44");
             Menu.AddSeparator();
-            Menu.AddLabel("By Crayz Turkish ;)");
+            Menu.AddLabel("By Crayz Turkis ;)");
             Menu.AddSeparator();
-            Menu.AddLabel("Have Fun!");
+            Menu.AddLabel("Have Fun !");
 
-            ComboMenu = Menu.AddSubMenu("Combo", "CrayzCombo");
+            ComboMenu = Menu.AddSubMenu("Combo", "Combo");
             ComboMenu.AddGroupLabel("Combo Settings");
             ComboMenu.Add("useQCombo", new CheckBox("Use Q"));
             ComboMenu.Add("useQKite", new CheckBox("Use Q to Kite Melee", false));
@@ -94,7 +64,7 @@ namespace CrayzVayne
             ComboMenu.Add("useRCombo", new CheckBox("Use R", false));
             ComboMenu.Add("noRUnderTurret", new CheckBox("Disable R if Target is under enemy turret"));
 
-            CondemnPriorityMenu = Menu.AddSubMenu("Auto Condemn", "CrayzCodemn");
+            CondemnPriorityMenu = Menu.AddSubMenu("Auto Condemn", "AutoCondemn");
             CondemnPriorityMenu.AddGroupLabel("Condemn Priority");
             foreach (var enem in ObjectManager.Get<AIHeroClient>().Where(a => a.IsEnemy))
             {
@@ -119,7 +89,7 @@ namespace CrayzVayne
                 new KeyBind("Auto Condemn", false, KeyBind.BindTypes.PressToggle, 'H'));
             CondemnPriorityMenu.AddSeparator();
 
-            CondemnMenu = Menu.AddSubMenu("Condemn", "CrayzCodemn");
+            CondemnMenu = Menu.AddSubMenu("Condemn", "Condemn");
             CondemnMenu.AddGroupLabel("Condemn Settings");
             CondemnMenu.AddSeparator();
             CondemnMenu.Add("pushDistance", new Slider("Push Distance", 410, 350, 420));
@@ -133,11 +103,11 @@ namespace CrayzVayne
             CondemnMenu.Add("condemnComboTrinket", new CheckBox("Trinket Bush After E", true));
             CondemnMenu.Add("condemnHarass", new CheckBox("Condemn in Harass", true));
 
-            HarassMenu = Menu.AddSubMenu("Harass", "CrayzHarass");
+            HarassMenu = Menu.AddSubMenu("Harass", "Harass");
             HarassMenu.AddGroupLabel("Harass Settings");
             HarassMenu.Add("useQHarass", new CheckBox("Use Q", true));
 
-            FarmMenu = Menu.AddSubMenu("Farming", "CrayzFarm");
+            FarmMenu = Menu.AddSubMenu("Farming", "Farming");
             FarmMenu.AddGroupLabel("Farming Settings");
             FarmMenu.Add("onlyTumbleToCursor", new CheckBox("Only Tumble To Cursor", false));
             FarmMenu.AddLabel("Last Hit");
@@ -145,7 +115,7 @@ namespace CrayzVayne
             FarmMenu.AddLabel("WaveClear");
             FarmMenu.Add("useQWaveClear", new CheckBox("Use Q WaveClear", true));
 
-            DrawMenu = Menu.AddSubMenu("Misc Menu", "CrayzMisc");
+            DrawMenu = Menu.AddSubMenu("Misc Menu", "Misc");
             DrawMenu.AddGroupLabel("Draw Settings");
             DrawMenu.Add("drawERange", new CheckBox("Draw E Range", false));
             DrawMenu.Add("condemnVisualiser", new CheckBox("Draw Condemn", false));
@@ -157,7 +127,7 @@ namespace CrayzVayne
             DrawMenu.Add("antiKalista", new CheckBox("Anti-Kalista"));
             DrawMenu.Add("antiRengar", new CheckBox("Anti-Rengar"));
 
-            InterruptorMenu = Menu.AddSubMenu("Interrupter", "CrayzInterrupter");
+            InterruptorMenu = Menu.AddSubMenu("Interrupter", "Interrupter");
             InterruptorMenu.AddGroupLabel("Interrupter Menu");
             InterruptorMenu.Add("enableInterrupter", new CheckBox("Enable Interrupter"));
             InterruptorMenu.AddSeparator();
@@ -170,23 +140,12 @@ namespace CrayzVayne
                     "Danger Level: " + DangerSliderValues[dangerSlider.Cast<Slider>().CurrentValue - 1];
             };
 
-            GapCloserMenu = Menu.AddSubMenu("Anti-GapClosers", "CrayzGapCloser");
+            GapCloserMenu = Menu.AddSubMenu("Anti-GapClosers", "Anti-GapClosers");
             GapCloserMenu.AddGroupLabel("Anti-GapCloser Menu");
             GapCloserMenu.Add("enableGapCloser", new CheckBox("Enable Anti-GapCloser"));
 
-            AutoPotHealMenu = Menu.AddSubMenu("Potion & Heal", "Potion & Heal");
-            AutoPotHealMenu.AddGroupLabel("Auto pot usage");
-            AutoPotHealMenu.Add("potion", new CheckBox("Use potions"));
-            AutoPotHealMenu.Add("potionminHP", new Slider("Minimum Health % to use potion", 40));
-            AutoPotHealMenu.Add("potionMinMP", new Slider("Minimum Mana % to use potion", 20));
-            AutoPotHealMenu.AddGroupLabel("AUto Heal Usage");
-            AutoPotHealMenu.Add("UseHeal", new CheckBox("Use Heal"));
-            AutoPotHealMenu.Add("useHealHP", new Slider("Minimum Health % to use Heal", 20));
-
             Orbwalker.OnPreAttack += Events.Orbwalker_OnPreAttack;
             Game.OnUpdate += Game_OnUpdate;
-            Game.OnUpdate += UseHeal;
-            Game.OnUpdate += AutoPot;
             Drawing.OnDraw += Drawing_OnDraw;
             Gapcloser.OnGapcloser += Events.Gapcloser_OnGapCloser;
             Interrupter.OnInterruptableSpell += Events.Interrupter_OnInterruptableSpell;
@@ -194,7 +153,6 @@ namespace CrayzVayne
             Obj_AI_Base.OnSpellCast += Obj_AI_Base_OnSpellCast;
             Obj_AI_Base.OnBasicAttack += Events.ObjAiBaseOnOnBasicAttack;
             GameObject.OnCreate += Events.GameObject_OnCreate;
-
         }
 
         private static void Obj_AI_Base_OnSpellCast(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
@@ -260,62 +218,6 @@ namespace CrayzVayne
             }
         }
 
-        public static void AutoPot(EventArgs args)
-        {
-            if (AutoPotHealMenu["potion"].Cast<CheckBox>().CurrentValue && !Player.Instance.IsInShopRange() &&
-                Player.Instance.HealthPercent <= AutoPotHealMenu["potionminHP"].Cast<Slider>().CurrentValue &&
-                !(Player.Instance.HasBuff("RegenerationPotion") ||
-                  Player.Instance.HasBuff("ItemCrystalFlaskJungle") ||
-                  Player.Instance.HasBuff("ItemMiniRegenPotion") ||
-                  Player.Instance.HasBuff("ItemCrystalFlask") ||
-                  Player.Instance.HasBuff("ItemDarkCrystalFlask")))
-            {
-                if (Item.HasItem(HealthPotion.Id) && Item.CanUseItem(HealthPotion.Id))
-                {
-                    HealthPotion.Cast();
-                    Chat.Print("<font color=\"#ffffff\" > USe Pot </font>");
-                    return;
-                }
-                if (Item.HasItem(TotalBiscuit.Id) && Item.CanUseItem(TotalBiscuit.Id))
-                {
-                    TotalBiscuit.Cast();
-                    Chat.Print("<font color=\"#ffffff\" > USe Pot </font>");
-                    return;
-                }
-                if (Item.HasItem(RefillablePotion.Id) && Item.CanUseItem(RefillablePotion.Id))
-                {
-                    RefillablePotion.Cast();
-                    Chat.Print("<font color=\"#ffffff\" > USe Pot </font>");
-                    return;
-                }
-                if (Item.HasItem(CorruptingPotion.Id) && Item.CanUseItem(CorruptingPotion.Id))
-                {
-                    CorruptingPotion.Cast();
-                    Chat.Print("<font color=\"#ffffff\" > USe Pot </font>");
-                    return;
-                }
-            }
-            if (Player.Instance.ManaPercent <= AutoPotHealMenu["potionMinMP"].Cast<Slider>().CurrentValue &&
-                !(Player.Instance.HasBuff("RegenerationPotion") ||
-                  Player.Instance.HasBuff("ItemMiniRegenPotion") ||
-                  Player.Instance.HasBuff("ItemCrystalFlask") ||
-                  Player.Instance.HasBuff("ItemDarkCrystalFlask")))
-            {
-                if (Item.HasItem(CorruptingPotion.Id) && Item.CanUseItem(CorruptingPotion.Id))
-                {
-                    CorruptingPotion.Cast();
-                    Chat.Print("<font color=\"#ffffff\" > USe Pot </font>");
-                }
-            }
-        }
-
-        public static void UseHeal(EventArgs args)
-        {
-            if (Heal == null || !AutoPotHealMenu["UseHeal"].Cast<CheckBox>().CurrentValue || !Heal.IsReady() || !(_Player.HealthPercent <= AutoPotHealMenu["useHealHP"].Cast<Slider>().CurrentValue) || _Player.CountEnemyChampionsInRange(650) <= 0) return;
-            Heal.Cast();
-            Chat.Print("<font color=\"#ffffff\" > Use Heal Noob </font>");
-        }
-
         private static void AIHeroClient_OnProcessSpellCast(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
         {
             if (!sender.IsMe) return;
@@ -348,10 +250,52 @@ namespace CrayzVayne
             }
             if (DrawMenu["condemnVisualiser"].Cast<CheckBox>().CurrentValue)
             {
-                foreach (var point in Points)
+                var t = TargetSelector.GetTarget(E.Range + Q.Range, DamageType.Physical);
+                if (t.IsValidTarget())
                 {
-                    new Circle() {Color = (NavMesh.GetCollisionFlags(point.To3D()).HasFlag(CollisionFlags.Wall) ||
-                            NavMesh.GetCollisionFlags(point.To3D()).HasFlag(CollisionFlags.Building)) ? Color.Blue : Color.Red, Radius = 10}.Draw(point.To3D());
+                    var color = Color.Red;
+                    for (var i = 1; i < 8; i++)
+                    {
+                        var targetBehind = t.Position +
+                                           Vector3.Normalize(t.ServerPosition - ObjectManager.Player.Position) * i * 50;
+
+                        if (!targetBehind.IsWall())
+                        {
+                            color = Color.Aqua;
+                        }
+                        else
+                        {
+                            color = Color.Red;
+                        }
+                    }
+
+                    var tt = t.Position + Vector3.Normalize(t.ServerPosition - ObjectManager.Player.Position) * 8 * 50;
+
+                    var startpos = t.Position;
+                    var endpos = tt;
+                    var endpos1 = tt +
+                                  (startpos - endpos).To2D().Normalized().Rotated(45 * (float)Math.PI / 180).To3D() *
+                                  t.BoundingRadius;
+                    var endpos2 = tt +
+                                  (startpos - endpos).To2D().Normalized().Rotated(-45 * (float)Math.PI / 180).To3D() *
+                                  t.BoundingRadius;
+
+                    var width = 2;
+
+                    var x = new Geometry.Polygon.Line(startpos, endpos);
+                    {
+                        x.Draw(color, width);
+                    }
+
+                    var y = new Geometry.Polygon.Line(endpos, endpos1);
+                    {
+                        y.Draw(color, width);
+                    }
+
+                    var z = new Geometry.Polygon.Line(endpos, endpos2);
+                    {
+                        z.Draw(color, width);
+                    }
                 }
             }
         }
