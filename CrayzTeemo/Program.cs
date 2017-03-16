@@ -23,11 +23,13 @@ namespace CrayzTeemo
                 R.Cast(qAndrGap.End);
             }
         }
+
         private static void Main() 
         {
             Loading.OnLoadingComplete += Loading_OnLoadingComplete;
             Gapcloser.OnGapcloser += GapCloser;
             Drawing.OnDraw += Drawing_OnDraw;
+            Chat.Print("<font color=\"#6909aa\" >Crayz Turkish Presents </font><font color=\"#fffffff\" > Crayz Teemo Loaded Version 7.5.179.44 </font>");
         }
         public static Spell.Targeted Q;
         public static Spell.Active W, E;
@@ -36,9 +38,6 @@ namespace CrayzTeemo
 
         private static void Loading_OnLoadingComplete(EventArgs args)
         {
-            Chat.Print("<font color=\"#6909aa\" >Crayz Turkish Presents </font><font color=\"#fffffff\" > Crayz Teemo </font>");
-            Chat.Print("Loaded Version 7.5.179.44", Color.Red);
-
             if (StateHandler.Teemo.Hero != Champion.Teemo) return;
 
             Bootstrap.Init(null);
