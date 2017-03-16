@@ -19,6 +19,8 @@ namespace CrayzVayne
         private static void Main(string[] args)
         {
             Loading.OnLoadingComplete += Game_OnStart;
+            Chat.Print("<font color=\"#6909aa\" >Crayz Turkish Presents </font><font color=\"#fffffff\" > Crayz Vayne </font>");
+            Chat.Print("Loaded Version 7.5.179.44", Color.Red);
         }
 
         public static AIHeroClient _Player

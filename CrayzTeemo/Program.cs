@@ -36,9 +36,10 @@ namespace CrayzTeemo
 
         private static void Loading_OnLoadingComplete(EventArgs args)
         {
-                Chat.Print("<font color='#07667F'>CrayzTeemo v1 Loaded.Pleasant Games :).</font> ");
+            Chat.Print("<font color=\"#6909aa\" >Crayz Turkish Presents </font><font color=\"#fffffff\" > Crayz Teemo </font>");
+            Chat.Print("Loaded Version 7.5.179.44", Color.Red);
 
-                if (StateHandler.Teemo.Hero != Champion.Teemo) return;
+            if (StateHandler.Teemo.Hero != Champion.Teemo) return;
 
             Bootstrap.Init(null);
             Q = new Spell.Targeted(SpellSlot.Q, 680);
