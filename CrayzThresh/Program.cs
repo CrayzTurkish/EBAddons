@@ -1,0 +1,496 @@
+﻿using System;
+using EloBuddy;
+using EloBuddy.SDK;
+using EloBuddy.SDK.Enumerations;
+using EloBuddy.SDK.Events;
+using EloBuddy.SDK.Menu;
+using EloBuddy.SDK.Menu.Values;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using EloBuddy.SDK.Rendering;
+using SharpDX;
+
+namespace CrayzThresh
+{
+
+    internal class Program
+    {
+        public static AIHeroClient Player
+        {
+            get { return ObjectManager.Player; }
+        }
+        private static Spell.Skillshot Q, W, E;
+        public static Spell.Active Q2, R;
+        public static Menu menu;
+        public static Menu ComboMenu;
+        public static Menu HarassMenu;
+        public static Menu lanternMenu;
+        public static Menu flayMenu;
+        public static Menu hookMenu;
+        public static Menu drawMenu, pull_push;
+        
+        internal static void Main(string[] args)
+        {
+            Loading.OnLoadingComplete += Loading_OnLoadingComplete;
+        }
+
+        private static void Loading_OnLoadingComplete(EventArgs args)
+        {
+            if (Player.ChampionName != "Thresh")
+            {
+                return;
+            }
+            Bootstrap.Init(null);
+            Q = new Spell.Skillshot(SpellSlot.Q,1075,SkillShotType.Linear,(int)0.35f,1200,60);
+            Q2 = new Spell.Active(SpellSlot.Q,1075);
+            W = new Spell.Skillshot(SpellSlot.W,950,SkillShotType.Circular,(int)0.25f,1750,300);
+            E = new Spell.Skillshot(SpellSlot.E, 500,SkillShotType.Linear,1,2000,110);
+            R = new Spell.Active(SpellSlot.R,450);
+            menu = MainMenu.AddMenu("CrayzThresh", "CrayzThresh");
+            menu.AddGroupLabel("CrayzThresh");
+            menu.AddLabel("made by the Crayz Turkish");
+            menu.AddSeparator();
+            ComboMenu = menu.AddSubMenu("Combo", "Combo");
+            ComboMenu.Add("UseQCombo", new CheckBox("Use [Q]"));
+            ComboMenu.Add("UseWCombo", new CheckBox("Use [W]"));
+            ComboMenu.Add("UseECombo", new CheckBox("Use [E]"));
+            ComboMenu.Add("UseRCombo", new CheckBox("Use [R]"));
+            ComboMenu.Add("UseRComboEnemies", new Slider("[R] Min Enemies >=", 2, 1, 5));
+
+            HarassMenu = menu.AddSubMenu("Harass", "Harass");
+            HarassMenu.Add("UseQ1Harass", new CheckBox("Use [Q1] [Hook]"));
+            HarassMenu.Add("UseQ2Harass", new CheckBox("Use [Q2] [Fly]", false));
+            HarassMenu.Add("UseEHarass", new CheckBox("Use [E]"));
+
+            lanternMenu = menu.AddSubMenu("[W]Settings", "[W]Settings");
+            lanternMenu.Add("WLowAllies", new CheckBox("[W] Low Allies"));
+            lanternMenu.Add("WAllyPercent", new Slider("Ally Health Percent", 30));
+
+            flayMenu = menu.AddSubMenu("[E]Settings", "[E]Settings");
+            flayMenu.Add("EDash", new CheckBox("[E] on Dash [Smart]"));
+            flayMenu.Add("EInterrupt", new CheckBox("[E] to Interrupt"));
+            flayMenu.Add("EGapcloser", new CheckBox("[E] on Gapcloser"));
+
+            hookMenu = menu.AddSubMenu("[Q]Settings", "[Q]Settings");
+            hookMenu.Add("QDash", new CheckBox("[Q] on Dash [Smart]"));
+            hookMenu.Add("QInterrupt", new CheckBox("[Q] to Interrupt"));
+            hookMenu.Add("QImmobile", new CheckBox("[Q] on Immobile"));
+
+            pull_push = menu.AddSubMenu("Pull/Push Keybinds", "ppkeys");
+            pull_push.Add("push", new KeyBind("Push Enemy", false, KeyBind.BindTypes.HoldActive, 88));
+            pull_push.Add("pull", new KeyBind("Pull Enemy", false, KeyBind.BindTypes.HoldActive, 90));
+
+            drawMenu = menu.AddSubMenu("Draw", "Draw");
+            drawMenu.Add("drawq", new CheckBox("Draw [Q]"));
+
+            Chat.Print("<font color=\"#7CFC00\"><b>CrayzThresh:</b></font> by Crayz Turkish loaded !");
+
+            Game.OnTick += Game_OnTick;
+            Obj_AI_Base.OnNewPath += Obj_AI_Base_OnNewPath;
+            Interrupter.OnInterruptableSpell += Interrupter_OnInterruptableSpell;
+            Gapcloser.OnGapcloser += Gapcloser_OnGapCloser;
+            Obj_AI_Base.OnProcessSpellCast += AIHeroClient_OnProcessSpellCast;
+            Drawing.OnDraw += Drawing_OnDraw;
+        }
+
+        static void Drawing_OnDraw(EventArgs args)
+        {
+            if (drawMenu["drawq"].Cast<CheckBox>().CurrentValue) Circle.Draw(new ColorBGRA(Color.GreenYellow.ToBgra()), Q.Range, Player.Position);
+        }
+
+        static void AIHeroClient_OnProcessSpellCast(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
+        {
+            
+            if (!sender.IsEnemy || sender.IsMinion || sender.IsAlly || sender.IsValidTarget(Q.Range)) return;
+            // flash
+            if(args.SData.Name == "summonerflash")
+            {
+                if (Prediction.Position.PredictLinearMissile(
+                    sender,
+                    Q.Range,
+                    Q.Width,
+                    Q.CastDelay,
+                    Q.Speed,
+                    int.MaxValue,
+                    args.End).HitChance >= HitChance.High)
+                {
+                    Q.Cast(args.End);
+                }
+            }
+                // ezreal e
+            else if (args.SData.Name == "EzrealArcaneShift")
+            {
+                if (Prediction.Position.PredictLinearMissile(
+                    sender,
+                    Q.Range,
+                    Q.Width,
+                    Q.CastDelay,
+                    Q.Speed,
+                    int.MaxValue,
+                    args.End).HitChance >= HitChance.High)
+                {
+                    Q.Cast(args.End);
+                }
+            }
+                //shaco q
+            else if (args.SData.Name == "Deceive")
+            {
+                if (Prediction.Position.PredictLinearMissile(
+                    sender,
+                    Q.Range,
+                    Q.Width,
+                    Q.CastDelay,
+                    Q.Speed,
+                    int.MaxValue,
+                    args.End).HitChance >= HitChance.High)
+                {
+                    Q.Cast(args.End);
+                }
+            }
+            
+            
+        }
+
+        [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "Reviewed. Suppression is OK here.")]
+        private static void Gapcloser_OnGapCloser(AIHeroClient sender, Gapcloser.GapcloserEventArgs e)
+        {
+            if (!e.Sender.IsValidTarget() || !flayMenu["EGapcloser"].Cast<CheckBox>().CurrentValue || e.Sender.Type != Player.Type || !e.Sender.IsEnemy)
+            {
+                return;
+            }
+
+            E.Cast(e.Sender);
+        }
+
+        [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "Reviewed. Suppression is OK here.")]
+        private static void Interrupter_OnInterruptableSpell(Obj_AI_Base sender, Interrupter.InterruptableSpellEventArgs e)
+        {
+            if (!sender.IsValidTarget(Q.Range) || e.DangerLevel != DangerLevel.High || e.Sender.Type != Player.Type || !e.Sender.IsEnemy)
+            {
+                return;
+            }
+
+            if (E.IsReady() && E.IsInRange(sender) && flayMenu["EInterrupt"].Cast<CheckBox>().CurrentValue)
+            {
+                E.Cast(sender);
+            }
+            else if (Q.IsReady() && hookMenu["QInterrupt"].Cast<CheckBox>().CurrentValue && Prediction.Position.PredictLinearMissile(
+                    sender,
+                    Q.Range,
+                    Q.Width,
+                    Q.CastDelay,
+                    Q.Speed,
+                    int.MaxValue).HitChance >= HitChance.Low)
+            {
+                Q.Cast(sender);
+            }
+        }
+
+        private static void AutoQ()
+        {
+            if (!hookMenu["QImmobile"].Cast<CheckBox>().CurrentValue)
+            {
+                return;
+            }
+
+            var autoQTarget =
+                EntityManager.Heroes.Enemies.FirstOrDefault(
+                    x =>
+                    x.HasBuffOfType(BuffType.Charm) || x.HasBuffOfType(BuffType.Knockup)
+                    || x.HasBuffOfType(BuffType.Stun) || x.HasBuffOfType(BuffType.Suppression)
+                    || x.HasBuffOfType(BuffType.Snare));
+
+            if (autoQTarget != null && !autoQTarget.HasBuff("ThreshQ") && Prediction.Position.PredictLinearMissile(
+                    autoQTarget,
+                    Q.Range,
+                    Q.Width,
+                    Q.CastDelay,
+                    Q.Speed,
+                    int.MaxValue).HitChance >= HitChance.High && !Prediction.Position.PredictLinearMissile(
+                    autoQTarget,
+                    Q.Range,
+                    Q.Width,
+                    Q.CastDelay,
+                    Q.Speed,
+                    int.MaxValue).CollisionObjects.Any())
+            {
+                Q.Cast(autoQTarget);
+            }
+        }
+
+        private static void AutoW()
+        {
+            var lanternLowAllies = lanternMenu["WLowAllies"].Cast<CheckBox>().CurrentValue;
+            var lanternHealthPercent = lanternMenu["WAllyPercent"].Cast<Slider>().CurrentValue;
+
+            if (lanternLowAllies)
+            {
+                var ally =
+                    EntityManager.Heroes.Allies
+                        .FirstOrDefault(x => x.IsValidTarget(W.Range) && x.HealthPercent <= lanternHealthPercent);
+
+                if (ally != null && ally.CountEnemiesInRange(700) >= 1)
+                {
+                    W.Cast(W.GetPrediction(ally).CastPosition);
+                }
+            }
+        }
+
+        [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "Reviewed. Suppression is OK here.")]
+        private static void Obj_AI_Base_OnNewPath(Obj_AI_Base sender, GameObjectNewPathEventArgs args)
+        {
+            if (!sender.IsValid() || !args.IsDash || !sender.IsValidTarget(Q.Range) || sender.Type != Player.Type || !sender.IsEnemy)
+            {
+                return;
+            }
+            if (Q.IsReady() && !E.IsInRange(sender) && hookMenu["QDash"].Cast<CheckBox>().CurrentValue)
+            {
+                var endPosition = args.Path.Last();
+
+                if (Prediction.Position.PredictLinearMissile(
+                    sender,
+                    Q.Range,
+                    Q.Width,
+                    Q.CastDelay,
+                    Q.Speed,
+                    int.MaxValue,
+                    endPosition).HitChance < HitChance.High && Prediction.Position.PredictLinearMissile(
+                    sender,
+                    Q.Range,
+                    Q.Width,
+                    Q.CastDelay,
+                    Q.Speed,
+                    int.MaxValue).CollisionObjects.Any())
+                {
+                    return;
+                }
+
+                Q.Cast(endPosition);
+                
+            }
+
+            else if (E.IsReady() && E.IsInRange(sender) && flayMenu["EDash"].Cast<CheckBox>().CurrentValue)
+            {
+                var endPosition = args.Path.Last();
+                var isFleeing = endPosition.Distance(Player.ServerPosition) > Player.Distance(sender);
+
+                var prediction = E.GetPrediction(sender);
+
+                if (prediction.HitChance < HitChance.High)
+                {
+                    return;
+                }
+
+                var x = Player.ServerPosition.X - endPosition.X;
+                var y = Player.ServerPosition.Y - endPosition.Y;
+
+                var vector = new Vector3(
+                    Player.ServerPosition.X + x,
+                    Player.ServerPosition.Y + y,
+                    Player.ServerPosition.Z);
+
+                E.Cast(
+                    !isFleeing
+                        ? prediction.CastPosition
+                        : vector);
+            }
+        }
+
+        private static void Game_OnTick(EventArgs args)
+        {
+            if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo))
+            {
+                Combo();
+            }
+            if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Harass))
+            {
+                Harass();
+            }
+
+            AutoW();
+            AutoQ();
+            if (pull_push["push"].Cast<KeyBind>().CurrentValue)
+            {
+                var target = TargetSelector.GetTarget(E.Range, DamageType.Physical);
+                if (target != null)
+                {
+                    Push(target);
+                }
+            }
+            if (pull_push["pull"].Cast<KeyBind>().CurrentValue)
+            {
+                var target = TargetSelector.GetTarget(E.Range, DamageType.Physical);
+                if (target != null)
+                {
+                    Pull(target);
+                }
+            }
+        }
+
+        private static void Pull(AIHeroClient target)
+        {
+            if (target != null && Player.Distance(target) <= E.Range)
+            {
+                var pX = Player.Position.X + (Player.Position.X - target.Position.X);
+                var pY = Player.Position.Y + (Player.Position.Y - target.Position.Y);
+                E.Cast(new Vector3(new Vector2(pX), pY));
+
+            }
+        }
+
+        private static void Push(AIHeroClient target)
+        {
+            if (target != null && Player.Distance(target) <= E.Range)
+            {
+                E.Cast(target.ServerPosition);
+            }
+        }
+
+        private static void Harass()
+        {
+            var target = TargetSelector.GetTarget(Q.Range, DamageType.Physical);
+
+            if (!target.IsValidTarget())
+            {
+                return;
+            }
+
+            var useQ1 = HarassMenu["UseQ1Harass"].Cast<CheckBox>().CurrentValue;
+            var useQ2 = HarassMenu["UseQ2Harass"].Cast<CheckBox>().CurrentValue;
+            var useE = HarassMenu["UseEHarass"].Cast<CheckBox>().CurrentValue;
+
+            if (Q.IsReady())
+            {
+                if (useQ1 && !target.HasBuff("ThreshQ") && Prediction.Position.PredictLinearMissile(
+                    target,
+                    Q.Range,
+                    Q.Width,
+                    Q.CastDelay,
+                    Q.Speed,
+                    int.MaxValue).HitChance >= HitChance.High && !Prediction.Position.PredictLinearMissile(
+                    target,
+                    Q.Range,
+                    Q.Width,
+                    Q.CastDelay,
+                    Q.Speed,
+                    int.MaxValue).CollisionObjects.Any())
+                {
+                    Q.Cast(target);
+                }
+
+                if (useQ2 && target.HasBuff("ThreshQ") && !target.IsMinion)
+                {
+                    Q2.Cast();
+                }
+            }
+
+            if (useE && E.IsReady() || !target.HasBuff("ThreshQ"))
+            {
+                var isFleeing = Player.Distance(target) < target.Distance(Game.CursorPos);
+                var prediction = E.GetPrediction(target);
+
+                if (prediction.HitChance < HitChance.High)
+                {
+                    return;
+                }
+
+                var x = Player.ServerPosition.X - target.ServerPosition.X;
+                var y = Player.ServerPosition.Y - target.ServerPosition.Y;
+
+                var vector = new Vector3(
+                    Player.ServerPosition.X + x,
+                    Player.ServerPosition.Y + y,
+                    Player.ServerPosition.Z);
+
+                E.Cast(
+                    isFleeing
+                        ? prediction.CastPosition
+                        : vector);
+            }
+        }
+
+        private static void Combo()
+        {
+            var target = TargetSelector.GetTarget(Q.Range, DamageType.Physical);
+
+            if (!target.IsValidTarget(Q.Range) || target == null)
+            {
+                return;
+            }
+
+            var useQ = ComboMenu["UseQCombo"].Cast<CheckBox>().CurrentValue;
+            var useW = ComboMenu["UseWCombo"].Cast<CheckBox>().CurrentValue;
+            var useE = ComboMenu["UseECombo"].Cast<CheckBox>().CurrentValue;
+            
+
+            if (useQ && Q.IsReady())
+            {
+                if (target.HasBuff("ThreshQ") && !target.IsMinion)
+                {
+                    Q2.Cast();
+                }
+                else if (!target.HasBuff("ThreshQ") && Prediction.Position.PredictLinearMissile(
+                    target,
+                    Q.Range,
+                    Q.Width,
+                    Q.CastDelay,
+                    Q.Speed,
+                    int.MaxValue).HitChance >= HitChance.High && !Prediction.Position.PredictLinearMissile(
+                    target,
+                    Q.Range,
+                    Q.Width,
+                    Q.CastDelay,
+                    Q.Speed,
+                    int.MaxValue).CollisionObjects.Any())
+                {
+                    Q.Cast(target);
+                }
+            }
+
+            if (useW && W.IsReady() && target.HasBuff("ThreshQ"))
+            {
+                var ally =
+                    EntityManager.Heroes.Allies
+                        .FirstOrDefault(x => !x.IsMe && x.IsValidTarget(W.Range) && x.Distance(Player) > 300);
+
+                if (ally != null)
+                {
+                    W.Cast(W.GetPrediction(ally).CastPosition);
+                }
+                if (Player.HealthPercent < 50)
+                {
+                    W.Cast(W.GetPrediction(Player).CastPosition);
+                }
+            }
+
+            if (useE && E.IsReady() || !target.HasBuff("ThreshQ"))
+            {
+                var isFleeing = Player.Distance(target) < target.Distance(Game.CursorPos);
+                var prediction = E.GetPrediction(target);
+
+                if (prediction.HitChance >= HitChance.High)
+                {
+                    var x = Player.ServerPosition.X - target.ServerPosition.X;
+                    var y = Player.ServerPosition.Y - target.ServerPosition.Y;
+
+                    var vector = new Vector3(
+                        Player.ServerPosition.X + x,
+                        Player.ServerPosition.Y + y,
+                        Player.ServerPosition.Z);
+
+                    E.Cast(
+                        isFleeing
+                            ? prediction.CastPosition
+                            : vector);
+                }
+            }
+            var useR = ComboMenu["UseRCombo"].Cast<CheckBox>().CurrentValue;
+            var ultEnemies = ComboMenu["UseRComboEnemies"].Cast<Slider>().CurrentValue;
+            if (target.IsValidTarget(R.Range) && useR && R.IsReady() && Player.CountEnemiesInRange(R.Range) >= ultEnemies)
+            {
+                R.Cast();
+            }
+            
+        }
+    }
+}
