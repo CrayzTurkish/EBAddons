@@ -20,7 +20,7 @@ namespace CrayzLux
 
         public static void Main(string[] args)
         {
-           Loading.OnLoadingComplete += OnLoadingComplete;
+            Loading.OnLoadingComplete += OnLoadingComplete;
         }
 
         private static void OnLoadingComplete(EventArgs args)

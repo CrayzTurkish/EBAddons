@@ -49,17 +49,14 @@ namespace CrayzLux.Modes
                 }
             }
 
-            //E2 cast
-            /*TODO: FIX objects
             if (Program.EObject != null)
             {
                 foreach (var enemy in ObjectManager.Get<Obj_AI_Base>().Where(enemy => enemy.IsValidTarget() && enemy.IsEnemy && Vector3.Distance(Program.EObject.Position, enemy.Position) <= E.Width + 15))
                 {
-                    Program.DrawLog("Wybucham E w " + enemy.Name + " bije za:" + Damage.EDamage(enemy), Color.MediumVioletRed);
                     E2.Cast();
                 }
             }
-            */
+            
             //W cast
             foreach (var ally in ObjectManager.Get<Obj_AI_Base>().Where(ally => ally.IsValid() && ally.IsAlly && !ally.IsMinion && !ally.IsMonster && Vector3.Distance(Player.Instance.Position, ally.Position) <= W.Width))
             {

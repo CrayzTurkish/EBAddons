@@ -28,7 +28,7 @@ namespace CrayzLux
         {
             if (!sender.IsEnemy || !Settings.interruptQ || e.DangerLevel != DangerLevel.High) return;
 
-            if (sender.IsValidTarget(CrayzLux.SpellManager.Q.Range) )
+            if (sender.IsValidTarget(CrayzLux.SpellManager.Q.Range))
             {
                 CrayzLux.SpellManager.Q.Cast(sender);
             }
