@@ -85,10 +85,6 @@ namespace CrayzTristana
             KsMenu.Add("useWKs", new CheckBox("Use [W]", false));
 
             MiscMenu = Menu.AddSubMenu("Misc", "Misc");
-            MiscMenu.AddGroupLabel("Finisher Tweaks");
-            MiscMenu.Add("ERBuffer", new Slider("[E]-[R] Damage-Buffer", 60, 0, 500));
-            MiscMenu.Add("RBuffer", new Slider("[R] Damage-Buffer", 60, 0, 500));
-            MiscMenu.Add("WBuffer", new Slider("[W] Damage-Buffer", 50, 0, 500));
             MiscMenu.AddGroupLabel("Anti-Gapcloser");
             MiscMenu.Add("antiGC", new CheckBox("Basic Anti-Gapcloser", true));
             MiscMenu.Add("antiKitty", new CheckBox("Anti Rengar", true));
@@ -198,17 +194,17 @@ namespace CrayzTristana
                 {
                     Q.Cast();
                 }
-                if (useR && R.IsReady() && target.IsValidTarget(R.Range) && target.Health + target.AttackShield + MiscMenu["RBuffer"].Cast<Slider>().CurrentValue < Player.Instance.GetSpellDamage(target, SpellSlot.R, DamageLibrary.SpellStages.Default))
+                if (useR && R.IsReady() && target.IsValidTarget(R.Range) && target.Health + target.AttackShield < Player.Instance.GetSpellDamage(target, SpellSlot.R, DamageLibrary.SpellStages.Default))
                 {
                     R.Cast(target);
                 }
 
-                if (useWf && W.IsReady() && target.IsValidTarget(W.Range) && target.Health + target.AttackShield + MiscMenu["WBuffer"].Cast<Slider>().CurrentValue < Player.Instance.GetSpellDamage(target, SpellSlot.W, DamageLibrary.SpellStages.Default) && target.Position.CountEnemiesInRange(800) == 1 && nearTurret == null)
+                if (useWf && W.IsReady() && target.IsValidTarget(W.Range) && target.Health + target.AttackShield < Player.Instance.GetSpellDamage(target, SpellSlot.W, DamageLibrary.SpellStages.Default) && target.Position.CountEnemiesInRange(800) == 1 && nearTurret == null)
                 {
                     W.Cast(target);
                 }
                 if(targetE !=null)
-                    if (useER && !E.IsReady() && R.IsReady() && targetE.IsValidTarget(R.Range) && (targetE.Health + targetE.AllShield + MiscMenu["ERBuffer"].Cast<Slider>().CurrentValue) - (Player.Instance.GetSpellDamage(targetE, SpellSlot.E, DamageLibrary.SpellStages.Default) + (targetE.Buffs.Find(a => a.Name == "tristanaecharge").Count * Player.Instance.GetSpellDamage(targetE, SpellSlot.E, DamageLibrary.SpellStages.Detonation))) < Player.Instance.GetSpellDamage(targetE, SpellSlot.R))
+                    if (useER && !E.IsReady() && R.IsReady() && targetE.IsValidTarget(R.Range) && (targetE.Health + targetE.AllShield - (Player.Instance.GetSpellDamage(targetE, SpellSlot.E, DamageLibrary.SpellStages.Default) + (targetE.Buffs.Find(a => a.Name == "tristanaecharge").Count * Player.Instance.GetSpellDamage(targetE, SpellSlot.E, DamageLibrary.SpellStages.Detonation))) < Player.Instance.GetSpellDamage(targetE, SpellSlot.R)))
                     {
                         R.Cast(targetE);
                     }

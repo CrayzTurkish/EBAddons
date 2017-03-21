@@ -9,12 +9,19 @@ namespace CrayzTeemo
 {
     internal class StateHandler
     {
-        
-        public static AIHeroClient Teemo => Player.Instance; 
+
+        public static AIHeroClient Teemo => Player.Instance;
+
+        private static bool IsShroomed(Vector3 position)
+        {
+            return
+                ObjectManager.Get<Obj_AI_Base>()
+                    .Where(obj => obj.Name == "Noxious Trap")
+                    .Any(obj => position.Distance(obj.Position) <= 250);
+        }
 
         public static void Combo()
         {
-
             var q = EntityManager.Heroes.Enemies.Where(x => x.IsValidTarget(Program.Q.Range));// Q için Tahmin eklenebilir.Q menzilindeki düşmanları seçtirdim.
             var targetQ = TargetSelector.GetTarget(q, DamageType.Mixed); // Q için tahmin düzeyi eklenmedi
             if (targetQ != null)
@@ -25,21 +32,32 @@ namespace CrayzTeemo
                 }
             }
 
-            /*W*/ // Burada eğer teemo'nun AA menzilinde düşman varsa W kullanır
             if (Program.ComboMenu["useWCombo"].Cast<CheckBox>().CurrentValue && Program.W.IsReady() && (Teemo.CountEnemyChampionsInRange(Teemo.GetAutoAttackRange()) >= 1))
-                {
-                    Program.W.Cast();
-                }
-
-            /*R*/
-            var r = EntityManager.Heroes.Enemies.Where(x => x.IsValidTarget(Program.R.Range)); //R için Tahmin eklenebilir. R menzilindeki düşmanları seçtirdim.
-            var targetR = TargetSelector.GetTarget(r, DamageType.Mixed);  // R için tahmin düzeyi eklenmedi 
-            if (targetR == null) return;
-            if (Program.ComboMenu["useQCombo"].Cast<CheckBox>().CurrentValue && Program.R.IsReady())
             {
-                Program.R.Cast(targetR.Position);
+                Program.W.Cast();
             }
 
+            var enemies = EntityManager.Heroes.Enemies.FirstOrDefault(t => t.IsValidTarget() && Player.Instance.IsInAutoAttackRange(t));
+            var rtarget = TargetSelector.GetTarget(Program.R.Range, DamageType.Magical);
+            var useR = Program.ComboMenu["rcombo"].Cast<CheckBox>().CurrentValue;
+            var rCount = Player.Instance.Spellbook.GetSpell(SpellSlot.R).Ammo;
+            var rCharge = Program.ComboMenu["rCharge"].Cast<Slider>().CurrentValue;
+
+            if (rtarget == null)
+            {
+                return;
+            }
+            var predictionR = Program.R.GetPrediction(rtarget);
+
+            if (!Program.R.IsReady() || !useR || !Program.R.IsInRange(rtarget) || rCharge > rCount || !rtarget.IsValidTarget()
+                || IsShroomed(predictionR.CastPosition))
+            {
+                return;
+            }
+            if (predictionR.HitChance >= HitChance.High)
+            {
+                Program.R.Cast(predictionR.CastPosition);
+            }
         }
 
         public static void Harass()
@@ -70,15 +88,6 @@ namespace CrayzTeemo
             Program.Q.Cast(minion);
         }
 
-        public static void WaveClear()
-        {
-            if (!Program.LaneClearMenu["useQWC"].Cast<CheckBox>().CurrentValue || !Program.Q.IsReady()) return; 
-            var minion = EntityManager.MinionsAndMonsters.GetLaneMinions().FirstOrDefault(x => x.IsValidTarget(Program.Q.Range));
-           
-            if (minion == null) return;
-            Program.Q.Cast(minion);
-        }
-
         public static void Flee() 
         {
             if (Program.FleeMenu["useRFlee"].Cast<CheckBox>().CurrentValue && Program.R.IsReady())
@@ -96,6 +105,20 @@ namespace CrayzTeemo
         {
             return Teemo.CalculateDamageOnUnit(target, DamageType.Magical,
                 (float)(new[] { 80, 125, 170, 215, 260 }[Program.Q.Level] + 0.8 * Teemo.FlatMagicDamageMod));
+        }
+        private static float WDamage(Obj_AI_Base target)
+        {
+            return 0;
+        }
+        private static float EDamage(Obj_AI_Base target)
+        {
+            return target.CalculateDamageOnUnit(target, DamageType.Magical,
+                new[] { 0, 10, 20, 30, 40, 50 }[Program.E.Level] + (Player.Instance.TotalMagicalDamage * 0.3f));
+        }
+        private static float RDamage(Obj_AI_Base target)
+        {
+            return target.CalculateDamageOnUnit(target, DamageType.Magical,
+                (float)(new[] { 0, 200, 325, 450 }[Program.R.Level] + (Player.Instance.TotalMagicalDamage * 0.125f)));
         }
     }
 }
